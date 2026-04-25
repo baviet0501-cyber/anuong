@@ -293,6 +293,7 @@ let currentTargetCalories = 0;
 let currentMaintenanceCalories = 0;
 let outsideMealKey = "";
 let outsideMealCalories = 0;
+let lastPlanSignature = "";
 
 const numberFormat = new Intl.NumberFormat("vi-VN");
 
@@ -347,6 +348,10 @@ function getCarbBadge(item) {
   return "Tinh bột rất thấp";
 }
 
+function getPlanSignature(plan) {
+  return plan.items.map((item) => `${item.mealKey}:${item.title}:${item.calories}`).join("|");
+}
+
 function shuffle(items) {
   const copied = [...items];
   for (let index = copied.length - 1; index > 0; index -= 1) {
@@ -364,12 +369,16 @@ function getMealBudget(mealKey, targetForDay = currentTargetCalories) {
 }
 
 function pickForBudget(mealKey, budget) {
-  return mealData[mealKey]
+  const candidates = mealData[mealKey]
     .map((item) => ({
       ...item,
-      score: Math.abs(item.calories - budget) + Math.random() * 120,
+      score: Math.abs(item.calories - budget),
     }))
-    .sort((first, second) => first.score - second.score)[0];
+    .sort((first, second) => first.score - second.score)
+    .slice(0, 5);
+
+  const biasedIndex = Math.floor(Math.pow(Math.random(), 1.35) * candidates.length);
+  return candidates[Math.min(biasedIndex, candidates.length - 1)];
 }
 
 function getOutsideMealFromForm() {
@@ -412,11 +421,11 @@ function getPlanBudgets() {
   return { budgetMap, outside };
 }
 
-function createDailyPlan() {
+function createDailyPlan(forceDifferent = false) {
   const { budgetMap, outside } = getPlanBudgets();
-  let bestPlan = null;
+  const candidatePlans = [];
 
-  for (let attempt = 0; attempt < 120; attempt += 1) {
+  for (let attempt = 0; attempt < 80; attempt += 1) {
     const items = mealKeys.map((mealKey) => {
       if (outside && mealKey === outside.mealKey) {
         return {
@@ -441,12 +450,25 @@ function createDailyPlan() {
     const protein = items.reduce((sum, item) => sum + item.protein, 0);
     const score = Math.abs(total - currentTargetCalories);
 
-    if (!bestPlan || score < bestPlan.score) {
-      bestPlan = { items, total, protein, score, budgetMap, outside };
+    candidatePlans.push({ items, total, protein, score, budgetMap, outside });
+  }
+
+  candidatePlans.sort((first, second) => first.score - second.score);
+
+  const bestScore = candidatePlans[0].score;
+  const pool = candidatePlans
+    .filter((plan) => plan.score <= bestScore + 140)
+    .slice(0, 10);
+  const shuffledPool = shuffle(pool);
+
+  if (forceDifferent) {
+    const differentPlan = shuffledPool.find((plan) => getPlanSignature(plan) !== lastPlanSignature);
+    if (differentPlan) {
+      return differentPlan;
     }
   }
 
-  return bestPlan;
+  return shuffledPool[0] || candidatePlans[0];
 }
 
 function getAdjustmentAdvice(difference) {
@@ -516,12 +538,12 @@ function renderFlexibleSummary(plan) {
   }: ${formatCalories(plan.outside.calories)}. Còn lại cho các bữa khác: ${formatCalories(remaining)}.`;
 }
 
-function renderDailyPlan() {
+function renderDailyPlan(options = {}) {
   if (!currentTargetCalories) {
     return;
   }
 
-  const plan = createDailyPlan();
+  const plan = createDailyPlan(options.forceDifferent);
   const dailyPlan = document.getElementById("dailyPlan");
   const planSummary = document.getElementById("planSummary");
   const difference = plan.total - currentTargetCalories;
@@ -575,6 +597,7 @@ function renderDailyPlan() {
   )}, protein khoảng ${plan.protein} g. ${adjustmentAdvice}`;
 
   renderFlexibleSummary(plan);
+  lastPlanSignature = getPlanSignature(plan);
   refreshIcons();
 }
 
@@ -592,10 +615,16 @@ function calculateCalories() {
   const base = 10 * weight + 6.25 * height - 5 * age;
   const bmr = sex === "male" ? base + 5 : base - 161;
   const maintenance = Math.round(bmr * activity);
-  const minimum = sex === "male" ? 1500 : 1200;
-  const target = Math.max(minimum, maintenance - selectedDeficit);
+  const minimumGuideline = sex === "male" ? 1500 : 1200;
+  const target = Math.max(0, maintenance - selectedDeficit);
   const proteinLow = Math.round(weight * 1.2);
   const proteinHigh = Math.round(weight * 1.6);
+  const lowCalorieNote =
+    target < minimumGuideline
+      ? ` Mức này thấp hơn ngưỡng tham khảo ${formatCalories(
+          minimumGuideline,
+        )}, nên cân nhắc chọn giảm nhẹ hoặc tăng vận động.`
+      : "";
 
   currentTargetCalories = target;
   currentMaintenanceCalories = maintenance;
@@ -605,7 +634,11 @@ function calculateCalories() {
     "macroNote",
   ).textContent = `Duy trì khoảng ${formatCalories(
     currentMaintenanceCalories,
-  )}. Đang chọn ${getDeficitName()}: trừ khoảng ${selectedDeficit} kcal/ngày. Protein tham khảo: ${proteinLow}-${proteinHigh} g/ngày.`;
+  )}. Đang chọn ${getDeficitName()}: ${formatCalories(
+    currentMaintenanceCalories,
+  )} - ${selectedDeficit} = ${formatCalories(
+    target,
+  )}. Protein tham khảo: ${proteinLow}-${proteinHigh} g/ngày.${lowCalorieNote}`;
 
   renderCalorieAdvice(target, weight);
   renderDailyPlan();
@@ -622,7 +655,7 @@ function applyOutsideMeal() {
     outsideMealCalories = outside.calories;
   }
 
-  renderDailyPlan();
+  renderDailyPlan({ forceDifferent: true });
 }
 
 function resetOutsideMeal() {
@@ -630,7 +663,7 @@ function resetOutsideMeal() {
   outsideMealCalories = 0;
   document.getElementById("outsideMeal").value = "";
   document.getElementById("outsideCalories").value = "";
-  renderDailyPlan();
+  renderDailyPlan({ forceDifferent: true });
 }
 
 document.getElementById("tinh-calo").addEventListener("submit", (event) => {
@@ -662,12 +695,12 @@ document.getElementById("applyFlexible").addEventListener("click", applyOutsideM
 document.getElementById("resetFlexible").addEventListener("click", resetOutsideMeal);
 
 document.getElementById("generatePlan").addEventListener("click", () => {
-  renderDailyPlan();
+  renderDailyPlan({ forceDifferent: true });
   document.getElementById("thuc-don").scrollIntoView({ behavior: "smooth" });
 });
 
 document.getElementById("shuffleDay").addEventListener("click", () => {
-  renderDailyPlan();
+  renderDailyPlan({ forceDifferent: true });
 });
 
 window.addEventListener("DOMContentLoaded", () => {
