@@ -1,4 +1,4 @@
-const CACHE_NAME = "giam-can-i-pien-v2";
+const CACHE_NAME = "giam-can-i-pien-v3";
 
 const PRECACHE_URLS = [
   "./",
