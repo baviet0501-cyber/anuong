@@ -1,4 +1,4 @@
-const CACHE_NAME = "giam-can-i-pien-v3";
+const CACHE_NAME = "giam-can-i-pien-v4";
 
 const PRECACHE_URLS = [
   "./",
@@ -7,6 +7,7 @@ const PRECACHE_URLS = [
   "./app.js",
   "./manifest.webmanifest",
   "./assets/app-bg.jpg",
+  "./assets/icon-180.png",
   "./assets/icon-192.png",
   "./assets/icon-512.png",
 ];
