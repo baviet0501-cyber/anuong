@@ -1,0 +1,321 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Chế độ ăn giảm cân lành mạnh</title>
+    <meta
+      name="description"
+      content="Trang web cơ bản về chế độ ăn giảm cân với thực đơn ngẫu nhiên dựa trên ức gà, tôm, trứng gà, gạo lứt và phở gạo lứt."
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="site-header">
+      <a class="brand" href="#top" aria-label="Về đầu trang">
+        <span class="brand-mark">Ăn</span>
+        <span>Giảm cân lành mạnh</span>
+      </a>
+      <nav class="top-nav" aria-label="Điều hướng chính">
+        <a href="#nguyen-tac">Nguyên tắc</a>
+        <a href="#thuc-don">Thực đơn</a>
+        <a href="#goi-y-mon">Chọn món</a>
+        <a href="#mua-sam">Nguyên liệu</a>
+      </nav>
+    </header>
+
+    <main id="top">
+      <section class="hero">
+        <div class="hero-overlay" aria-hidden="true"></div>
+        <div class="hero-content">
+          <div class="hero-copy">
+            <p class="eyebrow">Ăn đủ chất, giảm cân bền vững</p>
+            <h1>Chế độ ăn uống giảm cân lành mạnh</h1>
+            <p class="hero-text">
+              Tính calo mục tiêu, sau đó tạo thực đơn ngẫu nhiên từ nguyên liệu
+              bạn có sẵn: ức gà, tôm, trứng gà, gạo lứt, phở gạo lứt và rau.
+            </p>
+            <div class="hero-badges" aria-label="Nhóm nguyên liệu chính">
+              <span class="hero-badge">Ức gà</span>
+              <span class="hero-badge">Tôm</span>
+              <span class="hero-badge">Trứng gà</span>
+              <span class="hero-badge">Gạo lứt</span>
+              <span class="hero-badge">Phở gạo lứt</span>
+              <span class="hero-badge soft">Định lượng theo gram</span>
+            </div>
+            <div class="hero-actions">
+              <a class="button primary" href="#tinh-calo">
+                <i data-lucide="calculator" aria-hidden="true"></i>
+                Tính calo
+              </a>
+              <a class="button secondary" href="#thuc-don">
+                <i data-lucide="utensils" aria-hidden="true"></i>
+                Xem thực đơn
+              </a>
+            </div>
+          </div>
+
+          <form class="calorie-panel" id="tinh-calo" aria-labelledby="calc-title">
+            <div class="panel-heading">
+              <div>
+                <p class="section-kicker">Công cụ nhanh</p>
+                <h2 id="calc-title">Calo mục tiêu/ngày</h2>
+              </div>
+              <i data-lucide="activity" aria-hidden="true"></i>
+            </div>
+
+            <div class="field-grid">
+              <label>
+                Giới tính
+                <select id="sex">
+                  <option value="female">Nữ</option>
+                  <option value="male">Nam</option>
+                </select>
+              </label>
+              <label>
+                Tuổi
+                <input id="age" type="number" min="16" max="90" value="24" />
+              </label>
+              <label>
+                Chiều cao (cm)
+                <input id="height" type="number" min="120" max="230" value="165" />
+              </label>
+              <label>
+                Cân nặng (kg)
+                <input id="weight" type="number" min="35" max="220" value="55" />
+              </label>
+            </div>
+
+            <label class="wide-field">
+              Mức vận động
+              <select id="activity">
+                <option value="1.2" selected>Ít vận động</option>
+                <option value="1.375">Vận động nhẹ</option>
+                <option value="1.55">Vận động vừa</option>
+                <option value="1.725">Vận động nhiều</option>
+              </select>
+            </label>
+
+            <div class="deficit-control">
+              <div class="control-heading">
+                <span>Tốc độ giảm cân</span>
+                <small>Mức calo sẽ trừ khỏi calo duy trì</small>
+              </div>
+              <div class="segmented" role="group" aria-label="Tốc độ giảm cân">
+                <button
+                  type="button"
+                  class="segment active"
+                  data-deficit="300"
+                  aria-pressed="true"
+                >
+                  <strong>Giảm nhẹ</strong>
+                  <small>-300 kcal/ngày</small>
+                </button>
+                <button
+                  type="button"
+                  class="segment"
+                  data-deficit="500"
+                  aria-pressed="false"
+                >
+                  <strong>Giảm vừa</strong>
+                  <small>-500 kcal/ngày</small>
+                </button>
+              </div>
+              <p class="helper-text">
+                Mức vận động dùng để ước tính calo duy trì. Tốc độ giảm cân dùng
+                để chọn thâm hụt calo mỗi ngày.
+              </p>
+              <p class="helper-text gram-hint">
+                Quy ước gram: ức gà/tôm theo gram sống sau sơ chế; gạo lứt theo
+                gram chín; phở gạo lứt theo gram khô trước khi trụng; rau theo
+                gram sống.
+              </p>
+            </div>
+
+            <div class="result-card" aria-live="polite">
+              <span>Mục tiêu gợi ý</span>
+              <strong id="targetCalories">-- kcal</strong>
+              <p id="macroNote">Nhập thông tin để xem gợi ý.</p>
+            </div>
+            <div class="calorie-advice" id="calorieAdvice" aria-live="polite"></div>
+            <button class="button primary plan-button" type="button" id="generatePlan">
+              <i data-lucide="shuffle" aria-hidden="true"></i>
+              Tạo thực đơn theo calo
+            </button>
+          </form>
+        </div>
+      </section>
+
+      <section class="section principles" id="nguyen-tac">
+        <div class="section-heading">
+          <p class="section-kicker">Nền tảng</p>
+          <h2>4 nguyên tắc dễ áp dụng</h2>
+        </div>
+        <div class="principle-grid">
+          <article class="principle">
+            <i data-lucide="salad" aria-hidden="true"></i>
+            <h3>Nửa đĩa là rau</h3>
+            <p>
+              Thêm dưa leo, xà lách, bắp cải, cải xanh, bông cải hoặc rau luộc
+              để no hơn mà không tăng nhiều calo.
+            </p>
+          </article>
+          <article class="principle">
+            <i data-lucide="drumstick" aria-hidden="true"></i>
+            <h3>Đạm nạc là nền chính</h3>
+            <p>
+              Luân phiên ức gà, tôm và trứng gà trong ngày để giữ no lâu và hỗ
+              trợ duy trì khối cơ khi giảm cân.
+            </p>
+          </article>
+          <article class="principle">
+            <i data-lucide="wheat" aria-hidden="true"></i>
+            <h3>Dùng tinh bột theo mục tiêu</h3>
+            <p>
+              Chọn gạo lứt hoặc phở gạo lứt, giảm hoặc tăng khẩu phần theo calo
+              mục tiêu thay vì cắt tinh bột hoàn toàn.
+            </p>
+          </article>
+          <article class="principle">
+            <i data-lucide="glass-water" aria-hidden="true"></i>
+            <h3>Ưu tiên món luộc/hấp</h3>
+            <p>
+              Hạn chế dầu mỡ và nước sốt ngọt để tổng năng lượng trong ngày sát
+              mục tiêu hơn, dù vẫn ăn món quen thuộc.
+            </p>
+          </article>
+        </div>
+      </section>
+
+      <section class="plate-section">
+        <div class="plate-visual" aria-label="Minh họa đĩa ăn cân bằng">
+          <div class="plate-slice vegetables">Khẩu phần<br /><strong>1/2</strong></div>
+          <div class="plate-slice protein">Protein<br /><strong>1/4</strong></div>
+          <div class="plate-slice carbs">Tinh bột<br /><strong>1/4</strong></div>
+        </div>
+        <div class="plate-copy">
+          <p class="section-kicker">Khẩu phần</p>
+          <h2>Chia bữa với nguyên liệu đang có</h2>
+          <p>
+            Với nhóm nguyên liệu hiện có, cách dễ theo nhất là: mỗi bữa chọn một
+            đạm chính (ức gà hoặc tôm hoặc trứng), đi cùng gạo lứt/phở gạo lứt
+            với lượng vừa phải, rồi thêm 1-2 chén rau. Vẫn có thể đổi cách nấu để
+            đỡ ngán như áp chảo, luộc, xào nhanh hoặc nấu phở nước.
+          </p>
+          <div class="note-box">
+            <i data-lucide="info" aria-hidden="true"></i>
+            <p>
+              Nếu bạn đang mang thai, cho con bú, có bệnh nền, rối loạn ăn uống
+              hoặc cần giảm cân nhanh vì lý do y tế, hãy trao đổi với bác sĩ hoặc
+              chuyên gia dinh dưỡng.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section class="section meal-section" id="thuc-don">
+        <div class="section-heading">
+          <p class="section-kicker">Gợi ý</p>
+          <h2>Thực đơn linh hoạt theo ngày</h2>
+          <p class="section-note">
+            Mỗi lần bấm tạo mới, hệ thống chọn một tổ hợp món khác và cố gắng đưa
+            tổng năng lượng gần với mục tiêu calo đã tính.
+          </p>
+        </div>
+
+        <div class="plan-toolbar">
+          <div>
+            <p class="section-kicker">Hôm nay</p>
+            <h3>Gợi ý theo calo đã tính</h3>
+          </div>
+          <button class="button primary" type="button" id="shuffleDay">
+            <i data-lucide="refresh-cw" aria-hidden="true"></i>
+            Đổi thực đơn
+          </button>
+        </div>
+        <div class="daily-plan" id="dailyPlan" aria-live="polite"></div>
+        <p class="plan-summary" id="planSummary"></p>
+
+        <div class="section-heading compact" id="goi-y-mon">
+          <p class="section-kicker">Chọn món</p>
+          <h2>Đổi món theo từng bữa</h2>
+          <p class="section-note">
+            Chọn một bữa để xem các món phù hợp hơn với ngân sách calo của bữa đó.
+          </p>
+        </div>
+        <div class="meal-tabs" role="tablist" aria-label="Bữa ăn">
+          <button class="meal-tab active" type="button" data-meal="breakfast">
+            Sáng
+          </button>
+          <button class="meal-tab" type="button" data-meal="lunch">Trưa</button>
+          <button class="meal-tab" type="button" data-meal="dinner">Tối</button>
+          <button class="meal-tab" type="button" data-meal="snack">Phụ</button>
+          <button class="meal-tab shuffle-tab" type="button" id="shuffleMeal">
+            <i data-lucide="shuffle" aria-hidden="true"></i>
+            Đổi món
+          </button>
+        </div>
+
+        <div class="meal-layout">
+          <img
+            class="meal-image"
+            src="https://images.unsplash.com/photo-1603079841958-0c2c744f5a2e?auto=format&fit=crop&w=1200&q=80"
+            alt="Ức gà áp chảo và gạo lứt"
+          />
+          <div class="meal-list" id="mealList"></div>
+        </div>
+      </section>
+
+      <section class="shopping" id="mua-sam">
+        <div class="shopping-copy">
+          <p class="section-kicker">Chuẩn bị</p>
+          <h2>Nguyên liệu bạn đang có</h2>
+          <p>
+            Dùng đúng nhóm nguyên liệu sẵn có, bổ sung rau dễ mua để xoay món
+            trong 3-4 ngày và bám kế hoạch hơn.
+          </p>
+        </div>
+        <div class="shopping-grid">
+          <article>
+            <h3>Đạm chính</h3>
+            <p>Ức gà, tôm, trứng gà.</p>
+          </article>
+          <article>
+            <h3>Tinh bột chính</h3>
+            <p>Gạo lứt và phở gạo lứt.</p>
+          </article>
+          <article>
+            <h3>Rau thêm vào</h3>
+            <p>Dưa leo, xà lách, bắp cải, cải xanh, bông cải, rau muống hoặc giá.</p>
+          </article>
+          <article>
+            <h3>Gia vị cơ bản</h3>
+            <p>Muối, tiêu, tỏi, hành, nước mắm nhạt, ít dầu ăn.</p>
+          </article>
+          <article>
+            <h3>Meal prep nhanh</h3>
+            <p>Luộc sẵn trứng, hấp/luộc ức gà, nấu gạo lứt và rửa rau trước 2-3 bữa.</p>
+          </article>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <p>
+        Thông tin mang tính tham khảo. Nguồn nền tảng:
+        <a href="https://www.cdc.gov/healthy-weight-growth/about/tips-for-balancing-food-activity.html">CDC</a>
+        và
+        <a href="https://www.who.int/en/news-room/fact-sheets/detail/healthy-diet">WHO</a>.
+      </p>
+    </footer>
+
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+    <script src="app.js"></script>
+  </body>
+</html>
