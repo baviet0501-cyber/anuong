@@ -1,24 +1,21 @@
-const mealKeys = ["breakfast", "lunch", "dinner", "snack"];
+const mealKeys = ["breakfast", "lunch", "dinner"];
 
 const mealLabels = {
   breakfast: "Bữa sáng",
   lunch: "Bữa trưa",
   dinner: "Bữa tối",
-  snack: "Bữa phụ",
 };
 
 const mealRatios = {
-  breakfast: 0.25,
-  lunch: 0.35,
+  breakfast: 0.3,
+  lunch: 0.4,
   dinner: 0.3,
-  snack: 0.1,
 };
 
 const fallbackBudgets = {
   breakfast: 380,
   lunch: 520,
   dinner: 450,
-  snack: 170,
 };
 
 const mealData = {
@@ -293,6 +290,7 @@ let currentTargetCalories = 0;
 let currentMaintenanceCalories = 0;
 let outsideMealKey = "";
 let outsideMealCalories = 0;
+let outsideRemainingMealCount = 2;
 let lastPlanSignature = "";
 
 const numberFormat = new Intl.NumberFormat("vi-VN");
@@ -384,32 +382,68 @@ function pickForBudget(mealKey, budget) {
 function getOutsideMealFromForm() {
   const mealKey = getValue("outsideMeal");
   const calories = Number(getValue("outsideCalories"));
+  const remainingCount = Number(getValue("outsideRemainingMeals")) || 2;
 
   if (!mealKey || !calories || calories <= 0) {
     return null;
   }
 
-  return { mealKey, calories: Math.round(calories) };
+  return {
+    mealKey,
+    calories: Math.round(calories),
+    remainingCount: Math.min(Math.max(remainingCount, 1), 2),
+  };
+}
+
+function chooseRemainingMealSlots(outsideMeal, count) {
+  const remainingMeals = mealKeys.filter((mealKey) => mealKey !== outsideMeal);
+
+  if (count >= remainingMeals.length) {
+    return remainingMeals;
+  }
+
+  const preferences = {
+    breakfast: ["lunch", "dinner"],
+    lunch: ["dinner", "breakfast"],
+    dinner: ["lunch", "breakfast"],
+  };
+
+  return preferences[outsideMeal]
+    .filter((mealKey) => remainingMeals.includes(mealKey))
+    .slice(0, count);
 }
 
 function getPlanBudgets() {
   const budgetMap = {};
   const outside = outsideMealKey && outsideMealCalories > 0
-    ? { mealKey: outsideMealKey, calories: outsideMealCalories }
+    ? {
+        mealKey: outsideMealKey,
+        calories: outsideMealCalories,
+        remainingCount: outsideRemainingMealCount,
+      }
     : null;
 
   if (!outside) {
     mealKeys.forEach((mealKey) => {
       budgetMap[mealKey] = getMealBudget(mealKey, currentTargetCalories);
     });
-    return { budgetMap, outside };
+    return { budgetMap, outside, activeMealKeys: mealKeys };
   }
 
-  const remainingMeals = mealKeys.filter((mealKey) => mealKey !== outside.mealKey);
-  const remainingCalories = Math.max(250, currentTargetCalories - outside.calories);
-  const ratioSum = remainingMeals.reduce((sum, mealKey) => sum + mealRatios[mealKey], 0);
+  const selectedRemainingMeals = chooseRemainingMealSlots(
+    outside.mealKey,
+    outside.remainingCount,
+  );
+  const activeMealKeys = mealKeys.filter(
+    (mealKey) => mealKey === outside.mealKey || selectedRemainingMeals.includes(mealKey),
+  );
+  const remainingCalories = Math.max(0, currentTargetCalories - outside.calories);
+  const ratioSum = selectedRemainingMeals.reduce(
+    (sum, mealKey) => sum + mealRatios[mealKey],
+    0,
+  );
 
-  mealKeys.forEach((mealKey) => {
+  activeMealKeys.forEach((mealKey) => {
     if (mealKey === outside.mealKey) {
       budgetMap[mealKey] = outside.calories;
     } else {
@@ -418,15 +452,15 @@ function getPlanBudgets() {
     }
   });
 
-  return { budgetMap, outside };
+  return { budgetMap, outside, activeMealKeys };
 }
 
 function createDailyPlan(forceDifferent = false) {
-  const { budgetMap, outside } = getPlanBudgets();
+  const { budgetMap, outside, activeMealKeys } = getPlanBudgets();
   const candidatePlans = [];
 
   for (let attempt = 0; attempt < 80; attempt += 1) {
-    const items = mealKeys.map((mealKey) => {
+    const items = activeMealKeys.map((mealKey) => {
       if (outside && mealKey === outside.mealKey) {
         return {
           mealKey,
@@ -450,7 +484,7 @@ function createDailyPlan(forceDifferent = false) {
     const protein = items.reduce((sum, item) => sum + item.protein, 0);
     const score = Math.abs(total - currentTargetCalories);
 
-    candidatePlans.push({ items, total, protein, score, budgetMap, outside });
+    candidatePlans.push({ items, total, protein, score, budgetMap, outside, activeMealKeys });
   }
 
   candidatePlans.sort((first, second) => first.score - second.score);
@@ -498,17 +532,18 @@ function renderCalorieAdvice(target, weight) {
       : target <= 1700
         ? "Bữa chính: gạo lứt chín 130-170 g hoặc phở gạo lứt khô 55-70 g."
         : "Bữa chính: gạo lứt chín 170-220 g hoặc phở gạo lứt khô 70-85 g.";
-  const veggieGuide = "Rau: 150-220 g mỗi bữa chính, 80-120 g cho bữa phụ.";
+  const veggieGuide = "Rau: 150-220 g mỗi bữa chính.";
   const proteinGuide = `Thịt/đạm: ức gà hoặc tôm khoảng 100-140 g mỗi bữa chính. Protein tham khảo theo cân nặng hiện tại: ${Math.round(
     weight * 1.2,
   )}-${Math.round(weight * 1.6)} g/ngày.`;
-  const snackGuide = "Bữa phụ: 1 trứng hoặc 60-80 g ức gà/tôm, kèm 70-100 g rau.";
+  const flexibleGuide =
+    "Nếu đã ăn ngoài một bữa, chỉ chọn ăn thêm 1 hoặc 2 bữa chính còn lại để giữ calo hợp lý.";
 
   document.getElementById("calorieAdvice").innerHTML = [
     { icon: "wheat", text: carbGuide },
     { icon: "drumstick", text: proteinGuide },
     { icon: "salad", text: veggieGuide },
-    { icon: "egg", text: snackGuide },
+    { icon: "calendar-clock", text: flexibleGuide },
   ]
     .map(
       (item) => `
@@ -528,14 +563,15 @@ function renderFlexibleSummary(plan) {
 
   if (!plan.outside) {
     box.textContent =
-      "Chưa có bữa ăn ngoài. Bạn có thể chọn một bữa và nhập calo, web sẽ tự cân lại các bữa còn lại.";
+      "Chưa có bữa ăn ngoài. Kế hoạch hiện dùng 3 bữa chính và không có bữa phụ.";
     return;
   }
 
   const remaining = Math.max(0, currentTargetCalories - plan.outside.calories);
+  const extraMealCount = plan.activeMealKeys.length - 1;
   box.textContent = `Đã áp dụng bữa ăn ngoài cho ${
     mealLabels[plan.outside.mealKey]
-  }: ${formatCalories(plan.outside.calories)}. Còn lại cho các bữa khác: ${formatCalories(remaining)}.`;
+  }: ${formatCalories(plan.outside.calories)}. Web chỉ gợi ý thêm ${extraMealCount} bữa nữa, tổng calo còn lại: ${formatCalories(remaining)}.`;
 }
 
 function renderDailyPlan(options = {}) {
@@ -650,9 +686,11 @@ function applyOutsideMeal() {
   if (!outside) {
     outsideMealKey = "";
     outsideMealCalories = 0;
+    outsideRemainingMealCount = 2;
   } else {
     outsideMealKey = outside.mealKey;
     outsideMealCalories = outside.calories;
+    outsideRemainingMealCount = outside.remainingCount;
   }
 
   renderDailyPlan({ forceDifferent: true });
@@ -661,8 +699,10 @@ function applyOutsideMeal() {
 function resetOutsideMeal() {
   outsideMealKey = "";
   outsideMealCalories = 0;
+  outsideRemainingMealCount = 2;
   document.getElementById("outsideMeal").value = "";
   document.getElementById("outsideCalories").value = "";
+  document.getElementById("outsideRemainingMeals").value = "2";
   renderDailyPlan({ forceDifferent: true });
 }
 
@@ -671,7 +711,11 @@ document.getElementById("tinh-calo").addEventListener("submit", (event) => {
 });
 
 document.querySelectorAll("input, select").forEach((field) => {
-  if (field.id === "outsideCalories" || field.id === "outsideMeal") {
+  if (
+    field.id === "outsideCalories" ||
+    field.id === "outsideMeal" ||
+    field.id === "outsideRemainingMeals"
+  ) {
     return;
   }
   field.addEventListener("input", calculateCalories);

@@ -248,7 +248,8 @@
             <h2>Có một bữa ăn ngoài?</h2>
             <p class="section-note">
               Chọn bữa bạn ăn ngoài và nhập lượng calo ước tính. Web sẽ giữ bữa
-              đó trong kế hoạch và tự điều chỉnh các bữa còn lại cho sát mục tiêu.
+              đó trong kế hoạch, bỏ bữa phụ và chỉ gợi ý thêm 1 hoặc 2 bữa chính
+              còn lại cho sát mục tiêu.
             </p>
           </div>
           <div class="flexible-form">
@@ -259,7 +260,13 @@
                 <option value="breakfast">Bữa sáng</option>
                 <option value="lunch">Bữa trưa</option>
                 <option value="dinner">Bữa tối</option>
-                <option value="snack">Bữa phụ</option>
+              </select>
+            </label>
+            <label>
+              Ăn thêm
+              <select id="outsideRemainingMeals">
+                <option value="2" selected>2 bữa nữa</option>
+                <option value="1">1 bữa nữa</option>
               </select>
             </label>
             <label>
