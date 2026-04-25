@@ -849,7 +849,7 @@ a:focus-visible {
     align-items: flex-start;
     flex-direction: column;
     gap: 10px;
-    padding-inline: 10px;
+    padding-inline: 8px;
   }
 
   .brand {
@@ -878,7 +878,7 @@ a:focus-visible {
 
   .hero-content,
   .section {
-    width: min(100% - 12px, 1180px);
+    width: min(100% - 8px, 1180px);
   }
 
   .hero-content {
@@ -1011,7 +1011,7 @@ a:focus-visible {
 
   .plate-section,
   .shopping {
-    padding: 46px 6px;
+    padding: 44px 4px;
   }
 
   .plate-visual {
@@ -1115,5 +1115,44 @@ a:focus-visible {
     margin-top: 10px;
     font-size: 0.9rem;
     line-height: 1.56;
+  }
+}
+
+@media (max-width: 430px) {
+  .site-header {
+    padding-inline: 6px;
+  }
+
+  .hero-content,
+  .section {
+    width: min(100% - 4px, 1180px);
+  }
+
+  .hero-content {
+    padding-top: 34px;
+    padding-bottom: 50px;
+  }
+
+  .calorie-panel,
+  .daily-card,
+  .meal-item,
+  .principle,
+  .shopping-grid article {
+    padding: 8px;
+  }
+
+  .plan-toolbar,
+  .note-box {
+    padding: 8px;
+  }
+
+  .food-meta span {
+    font-size: 0.7rem;
+    padding: 3px 6px;
+  }
+
+  .plate-section,
+  .shopping {
+    padding: 40px 2px;
   }
 }
