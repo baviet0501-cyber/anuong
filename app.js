@@ -288,39 +288,11 @@ const mealData = {
   ],
 };
 
-const mealImages = {
-  breakfast:
-    "https://images.unsplash.com/photo-1547592180-85f173990554?auto=format&fit=crop&w=1200&q=80",
-  lunch:
-    "https://images.unsplash.com/photo-1603079841958-0c2c744f5a2e?auto=format&fit=crop&w=1200&q=80",
-  dinner:
-    "https://images.unsplash.com/photo-1515003197210-e0cd71810b5f?auto=format&fit=crop&w=1200&q=80",
-  snack:
-    "https://images.unsplash.com/photo-1518779578993-ec3579fee39f?auto=format&fit=crop&w=1200&q=80",
-};
-
-const mealAlts = {
-  breakfast: "Bữa sáng với phở gạo lứt và ức gà",
-  lunch: "Bữa trưa với ức gà, tôm và gạo lứt",
-  dinner: "Bữa tối nhẹ với đạm nạc và tinh bột vừa phải",
-  snack: "Bữa phụ nhỏ từ trứng gà, tôm hoặc ức gà",
-};
-
-const vegetableSides = [
-  "dưa leo + xà lách",
-  "bắp cải luộc",
-  "cải xanh luộc",
-  "bông cải hấp",
-  "rau muống luộc",
-  "xà lách trộn giấm nhẹ",
-  "giá trụng",
-  "rau luộc thập cẩm",
-];
-
 let selectedDeficit = 300;
 let currentTargetCalories = 0;
 let currentMaintenanceCalories = 0;
-let currentMealKey = "breakfast";
+let outsideMealKey = "";
+let outsideMealCalories = 0;
 
 const numberFormat = new Intl.NumberFormat("vi-VN");
 
@@ -342,10 +314,6 @@ function getDeficitName() {
   return selectedDeficit === 300 ? "giảm nhẹ" : "giảm vừa";
 }
 
-function getVegetableSuggestion() {
-  return vegetableSides[Math.floor(Math.random() * vegetableSides.length)];
-}
-
 function formatQuantity(item) {
   const parts = [];
 
@@ -364,8 +332,8 @@ function formatQuantity(item) {
   if (item.qty.phoDry) {
     parts.push(`Phở gạo lứt khô ${item.qty.phoDry} g`);
   }
-
   parts.push(`Rau ${item.qty.veg} g`);
+
   return parts.join(" • ");
 }
 
@@ -381,21 +349,18 @@ function getCarbBadge(item) {
 
 function shuffle(items) {
   const copied = [...items];
-
   for (let index = copied.length - 1; index > 0; index -= 1) {
     const swapIndex = Math.floor(Math.random() * (index + 1));
     [copied[index], copied[swapIndex]] = [copied[swapIndex], copied[index]];
   }
-
   return copied;
 }
 
-function getMealBudget(mealKey) {
-  if (!currentTargetCalories) {
+function getMealBudget(mealKey, targetForDay = currentTargetCalories) {
+  if (!targetForDay) {
     return fallbackBudgets[mealKey];
   }
-
-  return Math.round((currentTargetCalories * mealRatios[mealKey]) / 10) * 10;
+  return Math.round((targetForDay * mealRatios[mealKey]) / 10) * 10;
 }
 
 function pickForBudget(mealKey, budget) {
@@ -407,20 +372,77 @@ function pickForBudget(mealKey, budget) {
     .sort((first, second) => first.score - second.score)[0];
 }
 
+function getOutsideMealFromForm() {
+  const mealKey = getValue("outsideMeal");
+  const calories = Number(getValue("outsideCalories"));
+
+  if (!mealKey || !calories || calories <= 0) {
+    return null;
+  }
+
+  return { mealKey, calories: Math.round(calories) };
+}
+
+function getPlanBudgets() {
+  const budgetMap = {};
+  const outside = outsideMealKey && outsideMealCalories > 0
+    ? { mealKey: outsideMealKey, calories: outsideMealCalories }
+    : null;
+
+  if (!outside) {
+    mealKeys.forEach((mealKey) => {
+      budgetMap[mealKey] = getMealBudget(mealKey, currentTargetCalories);
+    });
+    return { budgetMap, outside };
+  }
+
+  const remainingMeals = mealKeys.filter((mealKey) => mealKey !== outside.mealKey);
+  const remainingCalories = Math.max(250, currentTargetCalories - outside.calories);
+  const ratioSum = remainingMeals.reduce((sum, mealKey) => sum + mealRatios[mealKey], 0);
+
+  mealKeys.forEach((mealKey) => {
+    if (mealKey === outside.mealKey) {
+      budgetMap[mealKey] = outside.calories;
+    } else {
+      const ratio = mealRatios[mealKey] / ratioSum;
+      budgetMap[mealKey] = Math.round((remainingCalories * ratio) / 10) * 10;
+    }
+  });
+
+  return { budgetMap, outside };
+}
+
 function createDailyPlan() {
+  const { budgetMap, outside } = getPlanBudgets();
   let bestPlan = null;
 
   for (let attempt = 0; attempt < 120; attempt += 1) {
-    const items = mealKeys.map((mealKey) => ({
-      mealKey,
-      ...pickForBudget(mealKey, getMealBudget(mealKey)),
-    }));
+    const items = mealKeys.map((mealKey) => {
+      if (outside && mealKey === outside.mealKey) {
+        return {
+          mealKey,
+          title: "Bữa ăn ngoài",
+          calories: outside.calories,
+          protein: 0,
+          qty: { chicken: 0, shrimp: 0, eggs: 0, riceCooked: 0, phoDry: 0, veg: 0 },
+          text: "Bạn tự nhập. Web đã tự cân lại các bữa còn lại.",
+          icon: "store",
+          isOutside: true,
+        };
+      }
+
+      return {
+        mealKey,
+        ...pickForBudget(mealKey, budgetMap[mealKey]),
+      };
+    });
+
     const total = items.reduce((sum, item) => sum + item.calories, 0);
     const protein = items.reduce((sum, item) => sum + item.protein, 0);
     const score = Math.abs(total - currentTargetCalories);
 
     if (!bestPlan || score < bestPlan.score) {
-      bestPlan = { items, total, protein, score };
+      bestPlan = { items, total, protein, score, budgetMap, outside };
     }
   }
 
@@ -458,8 +480,7 @@ function renderCalorieAdvice(target, weight) {
   const proteinGuide = `Thịt/đạm: ức gà hoặc tôm khoảng 100-140 g mỗi bữa chính. Protein tham khảo theo cân nặng hiện tại: ${Math.round(
     weight * 1.2,
   )}-${Math.round(weight * 1.6)} g/ngày.`;
-  const snackGuide =
-    "Bữa phụ: 1 trứng hoặc 60-80 g ức gà/tôm, kèm 70-100 g rau.";
+  const snackGuide = "Bữa phụ: 1 trứng hoặc 60-80 g ức gà/tôm, kèm 70-100 g rau.";
 
   document.getElementById("calorieAdvice").innerHTML = [
     { icon: "wheat", text: carbGuide },
@@ -480,6 +501,21 @@ function renderCalorieAdvice(target, weight) {
   refreshIcons();
 }
 
+function renderFlexibleSummary(plan) {
+  const box = document.getElementById("flexibleSummary");
+
+  if (!plan.outside) {
+    box.textContent =
+      "Chưa có bữa ăn ngoài. Bạn có thể chọn một bữa và nhập calo, web sẽ tự cân lại các bữa còn lại.";
+    return;
+  }
+
+  const remaining = Math.max(0, currentTargetCalories - plan.outside.calories);
+  box.textContent = `Đã áp dụng bữa ăn ngoài cho ${
+    mealLabels[plan.outside.mealKey]
+  }: ${formatCalories(plan.outside.calories)}. Còn lại cho các bữa khác: ${formatCalories(remaining)}.`;
+}
+
 function renderDailyPlan() {
   if (!currentTargetCalories) {
     return;
@@ -493,7 +529,26 @@ function renderDailyPlan() {
 
   dailyPlan.innerHTML = plan.items
     .map((item) => {
-      const vegType = getVegetableSuggestion();
+      if (item.isOutside) {
+        return `
+          <article class="daily-card outside-card">
+            <header>
+              <div>
+                <span class="meal-name">${mealLabels[item.mealKey]}</span>
+                <h3>${item.title}</h3>
+              </div>
+              <span class="kcal-pill">${item.calories} kcal</span>
+            </header>
+            <p class="portion">Bạn đã nhập calo bữa này thủ công.</p>
+            <div class="food-meta">
+              <span>Ăn ngoài</span>
+              <span>Giữ cố định</span>
+            </div>
+            <p class="food-tip">${item.text}</p>
+          </article>
+        `;
+      }
+
       return `
         <article class="daily-card">
           <header>
@@ -504,11 +559,10 @@ function renderDailyPlan() {
             <span class="kcal-pill">${item.calories} kcal</span>
           </header>
           <p class="portion">${formatQuantity(item)}</p>
-          <p class="vegetable-line">Rau đi kèm gợi ý: ${vegType} (${item.qty.veg} g)</p>
           <div class="food-meta">
             <span>${item.protein} g protein</span>
             <span>${getCarbBadge(item)}</span>
-            <span>Ước tính</span>
+            <span>Mục tiêu bữa: ${plan.budgetMap[item.mealKey]} kcal</span>
           </div>
           <p class="food-tip">${item.text}</p>
         </article>
@@ -519,53 +573,8 @@ function renderDailyPlan() {
   planSummary.textContent = `Tổng ngày khoảng ${formatCalories(
     plan.total,
   )}, protein khoảng ${plan.protein} g. ${adjustmentAdvice}`;
-}
 
-function getMealOptions(mealKey) {
-  const budget = getMealBudget(mealKey);
-
-  return shuffle(
-    mealData[mealKey]
-      .map((item) => ({
-        ...item,
-        score: Math.abs(item.calories - budget),
-      }))
-      .sort((first, second) => first.score - second.score)
-      .slice(0, 8),
-  ).slice(0, 4);
-}
-
-function renderMealOptions(mealKey) {
-  const list = document.getElementById("mealList");
-  const image = document.querySelector(".meal-image");
-  const budget = getMealBudget(mealKey);
-  const options = getMealOptions(mealKey);
-
-  list.innerHTML = options
-    .map((item) => {
-      const vegType = getVegetableSuggestion();
-      return `
-        <article class="meal-item">
-          <i data-lucide="${item.icon}" aria-hidden="true"></i>
-          <div>
-            <h3>${item.title}</h3>
-            <p>${formatQuantity(item)}</p>
-            <p class="vegetable-line">Rau đi kèm gợi ý: ${vegType} (${item.qty.veg} g)</p>
-            <div class="food-meta">
-              <span>${item.calories} kcal</span>
-              <span>${item.protein} g protein</span>
-              <span>${getCarbBadge(item)}</span>
-              <span>Mục tiêu bữa: ${budget} kcal</span>
-            </div>
-            <p>${item.text}</p>
-          </div>
-        </article>
-      `;
-    })
-    .join("");
-
-  image.src = mealImages[mealKey];
-  image.alt = mealAlts[mealKey];
+  renderFlexibleSummary(plan);
   refreshIcons();
 }
 
@@ -600,7 +609,28 @@ function calculateCalories() {
 
   renderCalorieAdvice(target, weight);
   renderDailyPlan();
-  renderMealOptions(currentMealKey);
+}
+
+function applyOutsideMeal() {
+  const outside = getOutsideMealFromForm();
+
+  if (!outside) {
+    outsideMealKey = "";
+    outsideMealCalories = 0;
+  } else {
+    outsideMealKey = outside.mealKey;
+    outsideMealCalories = outside.calories;
+  }
+
+  renderDailyPlan();
+}
+
+function resetOutsideMeal() {
+  outsideMealKey = "";
+  outsideMealCalories = 0;
+  document.getElementById("outsideMeal").value = "";
+  document.getElementById("outsideCalories").value = "";
+  renderDailyPlan();
 }
 
 document.getElementById("tinh-calo").addEventListener("submit", (event) => {
@@ -608,6 +638,9 @@ document.getElementById("tinh-calo").addEventListener("submit", (event) => {
 });
 
 document.querySelectorAll("input, select").forEach((field) => {
+  if (field.id === "outsideCalories" || field.id === "outsideMeal") {
+    return;
+  }
   field.addEventListener("input", calculateCalories);
   field.addEventListener("change", calculateCalories);
 });
@@ -625,30 +658,16 @@ document.querySelectorAll(".segment").forEach((button) => {
   });
 });
 
-document.querySelectorAll(".meal-tab[data-meal]").forEach((button) => {
-  button.addEventListener("click", () => {
-    document
-      .querySelectorAll(".meal-tab[data-meal]")
-      .forEach((tab) => tab.classList.remove("active"));
-    button.classList.add("active");
-    currentMealKey = button.dataset.meal;
-    renderMealOptions(currentMealKey);
-  });
-});
-
-document.getElementById("shuffleMeal").addEventListener("click", () => {
-  renderMealOptions(currentMealKey);
-});
+document.getElementById("applyFlexible").addEventListener("click", applyOutsideMeal);
+document.getElementById("resetFlexible").addEventListener("click", resetOutsideMeal);
 
 document.getElementById("generatePlan").addEventListener("click", () => {
   renderDailyPlan();
-  renderMealOptions(currentMealKey);
   document.getElementById("thuc-don").scrollIntoView({ behavior: "smooth" });
 });
 
 document.getElementById("shuffleDay").addEventListener("click", () => {
   renderDailyPlan();
-  renderMealOptions(currentMealKey);
 });
 
 window.addEventListener("DOMContentLoaded", () => {

@@ -584,6 +584,38 @@ a:focus-visible {
   font-size: clamp(1.15rem, 2.6vw, 1.6rem);
 }
 
+.flexible-panel {
+  margin-top: 18px;
+  padding: 16px;
+  background: #eef6f1;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.flexible-form {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: end;
+}
+
+.flexible-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.button.subtle {
+  color: var(--green-dark);
+  background: #edf4ef;
+  border-color: var(--border);
+}
+
+.flexible-summary {
+  margin: 10px 0 0;
+  color: var(--muted);
+  line-height: 1.55;
+}
+
 .daily-plan {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -597,6 +629,11 @@ a:focus-visible {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 8px;
+}
+
+.outside-card {
+  background: #fff8ef;
+  border-color: #f3d5ac;
 }
 
 .daily-card header {
@@ -1053,35 +1090,6 @@ a:focus-visible {
     font-size: 0.88rem;
   }
 
-  .meal-layout {
-    gap: 10px;
-  }
-
-  .meal-image {
-    min-height: 220px;
-  }
-
-  .meal-item {
-    grid-template-columns: 1fr;
-    gap: 7px;
-    padding: 10px;
-  }
-
-  .meal-item > svg {
-    width: 20px;
-    height: 20px;
-  }
-
-  .meal-item h3 {
-    font-size: 0.95rem;
-  }
-
-  .meal-item p {
-    margin-top: 5px;
-    font-size: 0.87rem;
-    line-height: 1.48;
-  }
-
   .food-meta {
     gap: 6px;
   }
@@ -1116,6 +1124,21 @@ a:focus-visible {
     font-size: 0.9rem;
     line-height: 1.56;
   }
+
+  .flexible-panel {
+    margin-top: 14px;
+    padding: 10px;
+  }
+
+  .flexible-form {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .flexible-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
 }
 
 @media (max-width: 430px) {
@@ -1135,7 +1158,6 @@ a:focus-visible {
 
   .calorie-panel,
   .daily-card,
-  .meal-item,
   .principle,
   .shopping-grid article {
     padding: 8px;

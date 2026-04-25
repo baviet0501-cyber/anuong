@@ -25,7 +25,7 @@
       <nav class="top-nav" aria-label="Điều hướng chính">
         <a href="#nguyen-tac">Nguyên tắc</a>
         <a href="#thuc-don">Thực đơn</a>
-        <a href="#goi-y-mon">Chọn món</a>
+        <a href="#linh-hoat-mon">Linh hoạt món</a>
         <a href="#mua-sam">Nguyên liệu</a>
       </nav>
     </header>
@@ -242,33 +242,48 @@
         <div class="daily-plan" id="dailyPlan" aria-live="polite"></div>
         <p class="plan-summary" id="planSummary"></p>
 
-        <div class="section-heading compact" id="goi-y-mon">
-          <p class="section-kicker">Chọn món</p>
-          <h2>Đổi món theo từng bữa</h2>
-          <p class="section-note">
-            Chọn một bữa để xem các món phù hợp hơn với ngân sách calo của bữa đó.
-          </p>
-        </div>
-        <div class="meal-tabs" role="tablist" aria-label="Bữa ăn">
-          <button class="meal-tab active" type="button" data-meal="breakfast">
-            Sáng
-          </button>
-          <button class="meal-tab" type="button" data-meal="lunch">Trưa</button>
-          <button class="meal-tab" type="button" data-meal="dinner">Tối</button>
-          <button class="meal-tab" type="button" data-meal="snack">Phụ</button>
-          <button class="meal-tab shuffle-tab" type="button" id="shuffleMeal">
-            <i data-lucide="shuffle" aria-hidden="true"></i>
-            Đổi món
-          </button>
-        </div>
-
-        <div class="meal-layout">
-          <img
-            class="meal-image"
-            src="https://images.unsplash.com/photo-1603079841958-0c2c744f5a2e?auto=format&fit=crop&w=1200&q=80"
-            alt="Ức gà áp chảo và gạo lứt"
-          />
-          <div class="meal-list" id="mealList"></div>
+        <div class="flexible-panel" id="linh-hoat-mon">
+          <div class="section-heading compact">
+            <p class="section-kicker">Linh hoạt món</p>
+            <h2>Có một bữa ăn ngoài?</h2>
+            <p class="section-note">
+              Chọn bữa bạn ăn ngoài và nhập lượng calo ước tính. Web sẽ giữ bữa
+              đó trong kế hoạch và tự điều chỉnh các bữa còn lại cho sát mục tiêu.
+            </p>
+          </div>
+          <div class="flexible-form">
+            <label>
+              Bữa ăn ngoài
+              <select id="outsideMeal">
+                <option value="">Không có</option>
+                <option value="breakfast">Bữa sáng</option>
+                <option value="lunch">Bữa trưa</option>
+                <option value="dinner">Bữa tối</option>
+                <option value="snack">Bữa phụ</option>
+              </select>
+            </label>
+            <label>
+              Calo bữa ăn ngoài
+              <input
+                id="outsideCalories"
+                type="number"
+                min="0"
+                max="2500"
+                step="10"
+                placeholder="Ví dụ: 650"
+              />
+            </label>
+            <div class="flexible-actions">
+              <button class="button primary" type="button" id="applyFlexible">
+                <i data-lucide="calculator" aria-hidden="true"></i>
+                Áp dụng
+              </button>
+              <button class="button subtle" type="button" id="resetFlexible">
+                Xóa bữa ngoài
+              </button>
+            </div>
+          </div>
+          <p class="flexible-summary" id="flexibleSummary" aria-live="polite"></p>
         </div>
       </section>
 
