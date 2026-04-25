@@ -290,8 +290,9 @@ let currentTargetCalories = 0;
 let currentMaintenanceCalories = 0;
 let outsideMealKey = "";
 let outsideMealCalories = 0;
-let outsideRemainingMealCount = 2;
+let outsideRemainingMealCount = 1;
 let lastPlanSignature = "";
+let lastActiveMealKeys = [];
 
 const numberFormat = new Intl.NumberFormat("vi-VN");
 
@@ -395,7 +396,7 @@ function getOutsideMealFromForm() {
   };
 }
 
-function chooseRemainingMealSlots(outsideMeal, count) {
+function chooseRemainingMealSlots(outsideMeal, count, forceDifferent = false) {
   const remainingMeals = mealKeys.filter((mealKey) => mealKey !== outsideMeal);
 
   if (count >= remainingMeals.length) {
@@ -408,12 +409,21 @@ function chooseRemainingMealSlots(outsideMeal, count) {
     dinner: ["lunch", "breakfast"],
   };
 
-  return preferences[outsideMeal]
+  const orderedMeals = preferences[outsideMeal]
     .filter((mealKey) => remainingMeals.includes(mealKey))
-    .slice(0, count);
+    .slice(0, remainingMeals.length);
+
+  if (!forceDifferent) {
+    return orderedMeals.slice(0, count);
+  }
+
+  const lastRemainingMeals = lastActiveMealKeys.filter((mealKey) => mealKey !== outsideMeal);
+  const alternateMeals = orderedMeals.filter((mealKey) => !lastRemainingMeals.includes(mealKey));
+
+  return (alternateMeals.length ? alternateMeals : shuffle(orderedMeals)).slice(0, count);
 }
 
-function getPlanBudgets() {
+function getPlanBudgets(forceDifferent = false) {
   const budgetMap = {};
   const outside = outsideMealKey && outsideMealCalories > 0
     ? {
@@ -433,6 +443,7 @@ function getPlanBudgets() {
   const selectedRemainingMeals = chooseRemainingMealSlots(
     outside.mealKey,
     outside.remainingCount,
+    forceDifferent,
   );
   const activeMealKeys = mealKeys.filter(
     (mealKey) => mealKey === outside.mealKey || selectedRemainingMeals.includes(mealKey),
@@ -456,7 +467,7 @@ function getPlanBudgets() {
 }
 
 function createDailyPlan(forceDifferent = false) {
-  const { budgetMap, outside, activeMealKeys } = getPlanBudgets();
+  const { budgetMap, outside, activeMealKeys } = getPlanBudgets(forceDifferent);
   const candidatePlans = [];
 
   for (let attempt = 0; attempt < 80; attempt += 1) {
@@ -491,8 +502,8 @@ function createDailyPlan(forceDifferent = false) {
 
   const bestScore = candidatePlans[0].score;
   const pool = candidatePlans
-    .filter((plan) => plan.score <= bestScore + 140)
-    .slice(0, 10);
+    .filter((plan) => plan.score <= bestScore + (forceDifferent ? 260 : 140))
+    .slice(0, forceDifferent ? 25 : 10);
   const shuffledPool = shuffle(pool);
 
   if (forceDifferent) {
@@ -634,6 +645,7 @@ function renderDailyPlan(options = {}) {
 
   renderFlexibleSummary(plan);
   lastPlanSignature = getPlanSignature(plan);
+  lastActiveMealKeys = plan.activeMealKeys;
   refreshIcons();
 }
 
@@ -686,7 +698,7 @@ function applyOutsideMeal() {
   if (!outside) {
     outsideMealKey = "";
     outsideMealCalories = 0;
-    outsideRemainingMealCount = 2;
+    outsideRemainingMealCount = 1;
   } else {
     outsideMealKey = outside.mealKey;
     outsideMealCalories = outside.calories;
@@ -699,10 +711,10 @@ function applyOutsideMeal() {
 function resetOutsideMeal() {
   outsideMealKey = "";
   outsideMealCalories = 0;
-  outsideRemainingMealCount = 2;
+  outsideRemainingMealCount = 1;
   document.getElementById("outsideMeal").value = "";
   document.getElementById("outsideCalories").value = "";
-  document.getElementById("outsideRemainingMeals").value = "2";
+  document.getElementById("outsideRemainingMeals").value = "1";
   renderDailyPlan({ forceDifferent: true });
 }
 
